@@ -1,40 +1,43 @@
-//server
-const apiHeaders = {
+//api
+
+const apiHeaders
+    = {
     "Content-Type": "application/json",
-    "Accept": "application/json"
+    Accept: "application/json"
 }
 
 function get(url) {
     return fetch(url).then(resp => resp.json())
 }
 
-function patch(url, id, data) {
-    return fetch(`${url}/${id}`, {
+function patch(url, id, bookData) {
+    return fetch(`${url}${id}`, {
         method: 'PATCH',
         headers: apiHeaders,
-        body: JSON.stringify(data)
-    })
+        body: JSON.stringify(bookData)
+    }).then(resp => resp.json())
 }
 
-//const
 const API = { get, patch }
+
+
+//consts
 const booksUrl = "http://localhost:3000/books/"
 const currentUser = { "id": 1, "username": "pouros" }
 const listPanel = document.querySelector("#list")
 const showPanel = document.querySelector("#show-panel")
 
-
-//functions - don't forget to invoke your master call!
+//functions - dont' forget to invoke the master function
 
 function getAllBooks() {
-    API.get(booksUrl).then(books => books.forEach(book => appendBookPreveiw(book)))
+    API.get(booksUrl).then(books => books.forEach(book => appendBookPreview(book)))
 }
 
-function appendBookPreveiw(book) {
-    const previewLi = document.createElement('li')
-    previewLi.innerText = book.title
-    previewLi.addEventListener('click', () => expandBook(book))
-    listPanel.appendChild(previewLi)
+function appendBookPreview(book) {
+    const li = document.createElement('li')
+    li.innerText = book.title
+    li.addEventListener('click', () => expandBook(book))
+    listPanel.append(li)
 }
 
 function expandBook(book) {
@@ -50,50 +53,48 @@ function expandBook(book) {
     img.src = book.img_url
 
     const ul = document.createElement('ul')
-    ul.id = "users-ul"
-
-
-    const readButton = document.createElement('button')
-    if (hasUserReadThisbook(book)) { readButton.innerText = "UnRead Me" } else { readButton.innerText = "Read Me" }
-
-    readButton.addEventListener('click', () => handleButtonClick(book))
+    ul.id = "users-list"
 
     book.users.forEach(bookUser => {
-        const li = document.createElement('li')
-        li.innerText = bookUser.username
-        li.id = `user-${bookUser.id}`
-        ul.append(li)
+        const userLi = document.createElement('li')
+        userLi.innerText = bookUser.username
+        userLi.id = `user-${bookUser.id}`
+        ul.append(userLi)
     })
-    showPanel.append(h2, p, img, ul, readButton)
+
+    const readBtn = document.createElement('button')
+    readBtn.addEventListener('click', () => handleButtonClick(book))
+
+    if (hasUserReadThisBook(book)) { readBtn.innerText = "Unread Me" } else { readBtn.innerText = "Read Me" }
+
+
+    showPanel.append(h2, img, p, readBtn, ul)
 }
 
 function handleButtonClick(book) {
-    if (!hasUserReadThisbook(book)) {
+    if (!hasUserReadThisBook(book)) {
         book.users.push(currentUser)
         API.patch(booksUrl, book.id, book)
-            const li = document.createElement('li')
-            li.innerText = currentUser.username
-            li.id = `user-${currentUser.id}`
-            ul = document.querySelector('#users-ul')
-            ul.append(li)
-            document.querySelector('button').innerText = "UnReadMe"
+        const userLi = document.createElement('li')
+        const ul = document.querySelector("#users-list")
+        userLi.innerText = currentUser.username
+        userLi.id = `user-${currentUser.id}`
+        ul.append(userLi)
+        const readBtn = document.querySelector('button')
+        readBtn.innerText = 'UnRead Me'
     } else {
-        book.users = book.users.filter(bookUsr => bookUsr.id !== currentUser.id)
-        let foundLi = document.querySelector(`#user-${currentUser.id}`)
+        book.users = book.users.filter(bookUser => bookUser.id !== currentUser.id)
+        API.patch(booksUrl, book.id, book)
+        const foundLi = document.querySelector(`#user-${currentUser.id}`)
         foundLi.remove()
-
-        API.patch(booksUrl, book.id, book).then(
-            document.querySelector('button').innerText = "ReadMe"
-        )
+        const readBtn = document.querySelector('button')
+        readBtn.innerText = 'Read Me'
     }
+
 }
 
-
-
-function hasUserReadThisbook(book) {
-    return book.users.find(bookUsr => bookUsr.id == currentUser.id)
+function hasUserReadThisBook(book) {
+    return book.users.find(bookUsr => bookUsr.id === currentUser.id)
 }
-
-
 
 getAllBooks()
