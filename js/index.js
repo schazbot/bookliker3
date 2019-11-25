@@ -1,100 +1,90 @@
 //api
 
-const apiHeaders
-    = {
-    "Content-Type": "application/json",
-    Accept: "application/json"
-}
+const apiHeaders = {
+  "Content-Type": "application/json",
+  Accept: "application/json"
+};
 
-function get(url) {
-    return fetch(url).then(resp => resp.json())
-}
+const get = url => {
+  return fetch(url).then(resp => resp.json());
+};
 
-function patch(url, id, bookData) {
-    return fetch(`${url}${id}`, {
-        method: 'PATCH',
-        headers: apiHeaders,
-        body: JSON.stringify(bookData)
-    }).then(resp => resp.json())
-}
+const patch = (url, id, bookData) => {
+  return fetch(url + id, {
+    method: "PATCH",
+    headers: apiHeaders,
+    body: JSON.stringify(bookData)
+  }).then(resp => resp.json());
+};
 
-const API = { get, patch }
-
+const API = { get, patch };
 
 //consts
-const booksUrl = "http://localhost:3000/books/"
-const currentUser = { "id": 1, "username": "pouros" }
-const listPanel = document.querySelector("#list")
-const showPanel = document.querySelector("#show-panel")
+const booksUrl = "http://localhost:3000/books/";
+const listPanel = document.querySelector("#list");
+const showPanel = document.querySelector("#show-panel");
+const currentUser = { id: 1, username: "pouros" };
 
-//functions - dont' forget to invoke the master function
+//functions
 
-function getAllBooks() {
-    API.get(booksUrl).then(books => books.forEach(book => appendBookPreview(book)))
-}
+const getAllBooks = () => {
+  API.get(booksUrl).then(books => books.forEach(book => makeBookPreview(book)));
+};
 
-function appendBookPreview(book) {
-    const li = document.createElement('li')
-    li.innerText = book.title
-    li.addEventListener('click', () => expandBook(book))
-    listPanel.append(li)
-}
+const makeBookPreview = book => {
+  let li = document.createElement("li");
+  li.innerText = book.title;
+  listPanel.append(li);
+  li.addEventListener("click", () => makeBookDetail(book));
+};
 
-function expandBook(book) {
-    while (showPanel.firstChild) showPanel.removeChild(showPanel.firstChild)
+const makeBookDetail = book => {
+  while (showPanel.firstChild) showPanel.removeChild(showPanel.firstChild);
+  const h1 = document.createElement("h1");
+  h1.innerText = book.title;
 
-    const h2 = document.createElement('h2')
-    h2.innerText = book.title
+  const img = document.createElement("img");
+  img.src = book.img_url;
 
-    const p = document.createElement('p')
-    p.innerText = book.description
+  const p = document.createElement("p");
+  p.innerText = book.description;
 
-    const img = document.createElement('img')
-    img.src = book.img_url
+  const ul = document.createElement("ul");
+  ul.id = "users-ul";
 
-    const ul = document.createElement('ul')
-    ul.id = "users-list"
+  book.users.forEach(bkUsr => {
+    let li = document.createElement("li");
+    li.id = `user-${bkUsr.id}`;
+    li.innerText = bkUsr.username;
+    ul.append(li);
+  });
 
-    book.users.forEach(bookUser => {
-        const userLi = document.createElement('li')
-        userLi.innerText = bookUser.username
-        userLi.id = `user-${bookUser.id}`
-        ul.append(userLi)
-    })
+  const btn = document.createElement("button");
+  btn.innerText = "Like Me";
+  btn.addEventListener("click", () => handleButtonClick(book));
 
-    const readBtn = document.createElement('button')
-    readBtn.addEventListener('click', () => handleButtonClick(book))
+  showPanel.append(h1, img, p, ul, btn);
+};
 
-    if (hasUserReadThisBook(book)) { readBtn.innerText = "Unread Me" } else { readBtn.innerText = "Read Me" }
+const handleButtonClick = book => {
+  if (!hasUserReadThisBook(book)) {
+    book.users.push(currentUser);
+    API.patch(booksUrl, book.id, book);
+    const userLi = document.createElement("li");
+    userLi.innerText = currentUser.username;
+    userLi.id = `user-${currentUser.id}`;
+    const ul = document.querySelector("#users-ul");
+    ul.append(userLi);
+  } else {
+      book.users = book.users.filter(bookUsr => bookUsr.id !== currentUser.id)
+      API.patch(booksUrl, book.id, book)
+      foundLi = document.querySelector(`#user-${currentUser.id}`)
+      foundLi.remove()
+  }
+};
 
+const hasUserReadThisBook = book => {
+  return book.users.find(bkUser => bkUser.id === currentUser.id);
+};
 
-    showPanel.append(h2, img, p, readBtn, ul)
-}
-
-function handleButtonClick(book) {
-    if (!hasUserReadThisBook(book)) {
-        book.users.push(currentUser)
-        API.patch(booksUrl, book.id, book)
-        const userLi = document.createElement('li')
-        const ul = document.querySelector("#users-list")
-        userLi.innerText = currentUser.username
-        userLi.id = `user-${currentUser.id}`
-        ul.append(userLi)
-        const readBtn = document.querySelector('button')
-        readBtn.innerText = 'UnRead Me'
-    } else {
-        book.users = book.users.filter(bookUser => bookUser.id !== currentUser.id)
-        API.patch(booksUrl, book.id, book)
-        const foundLi = document.querySelector(`#user-${currentUser.id}`)
-        foundLi.remove()
-        const readBtn = document.querySelector('button')
-        readBtn.innerText = 'Read Me'
-    }
-
-}
-
-function hasUserReadThisBook(book) {
-    return book.users.find(bookUsr => bookUsr.id === currentUser.id)
-}
-
-getAllBooks()
+getAllBooks();
